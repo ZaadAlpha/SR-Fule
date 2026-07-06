@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="SR Fuel Invoice Management System" />
   <title>SR Fuel Invoice</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -77,9 +78,35 @@
         </div>
       </div>
 
-      <div id="history" class="page hidden"><div class="panel"><h2>Invoice History</h2><table id="historyTable"><thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
-      <div id="reports" class="page hidden"><div class="panel"><h2>Reports</h2><p>Reports are calculated from local browser records. Owner can also use the Google Sheet as master record.</p><button onclick="exportCSV()">Download CSV</button></div></div>
-      <div id="settings" class="page hidden"><div class="panel"><h2>Settings</h2><label>Google Apps Script Web App URL<input id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec"></label><button onclick="saveSettings()">Save Settings</button></div></div>
+      <div id="history" class="page hidden">
+        <div class="panel">
+          <h2>Invoice History</h2>
+          <table id="historyTable">
+            <thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <button onclick="exportCSV()">Export CSV</button>
+        </div>
+      </div>
+
+      <div id="reports" class="page hidden">
+        <div class="panel">
+          <h2>Reports</h2>
+          <p>Reports are calculated from local browser records. Owner can also use the Google Sheet as master record.</p>
+          <button onclick="exportCSV()">Download CSV Report</button>
+          <button onclick="alert('Sync to Google Sheet via Apps Script in Settings')">Sync to Sheet</button>
+        </div>
+      </div>
+
+      <div id="settings" class="page hidden">
+        <div class="panel">
+          <h2>Settings</h2>
+          <label>Google Apps Script Web App URL
+            <input id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec" />
+          </label>
+          <button onclick="saveSettings()">Save Settings</button>
+        </div>
+      </div>
     </div>
   </section>
 <script src="app.js"></script>
