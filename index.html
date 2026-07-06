@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SR Fuel Invoice</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <main id="login" class="login-card">
+    <h1>SR Fuel Invoice</h1>
+    <p>GitHub Pages version</p>
+    <label>Role</label>
+    <select id="role">
+      <option value="entry">Entry</option>
+      <option value="admin">Admin</option>
+      <option value="owner">Owner Report View</option>
+    </select>
+    <label>Password / PIN</label>
+    <input id="pin" type="password" placeholder="Enter PIN" />
+    <button onclick="login()">Login</button>
+    <small>Default PINs are in README. Change them in app.js before upload.</small>
+  </main>
+
+  <section id="app" class="hidden">
+    <aside>
+      <h2>SR Fuel</h2>
+      <button onclick="showPage('dashboard')">Dashboard</button>
+      <button data-role="entry admin" onclick="showPage('invoice')">New Invoice</button>
+      <button onclick="showPage('history')">History</button>
+      <button data-role="admin owner" onclick="showPage('reports')">Reports</button>
+      <button data-role="admin" onclick="showPage('settings')">Settings</button>
+      <button onclick="logout()">Logout</button>
+    </aside>
+
+    <div class="content">
+      <header>
+        <h1 id="pageTitle">Dashboard</h1>
+        <span id="who"></span>
+      </header>
+
+      <div id="dashboard" class="page">
+        <div class="grid">
+          <div class="card"><b>Today Sales</b><span id="todaySales">0.00</span></div>
+          <div class="card"><b>This Month</b><span id="monthSales">0.00</span></div>
+          <div class="card"><b>Total Invoices</b><span id="invoiceCount">0</span></div>
+          <div class="card"><b>Diesel LTR</b><span id="dieselQty">0</span></div>
+          <div class="card"><b>Petrol LTR</b><span id="petrolQty">0</span></div>
+        </div>
+      </div>
+
+      <div id="invoice" class="page hidden">
+        <div class="panel">
+          <h2>Delivery Note Photo</h2>
+          <input id="photo" type="file" accept="image/*" onchange="previewPhoto(event)" />
+          <img id="photoPreview" class="preview hidden" />
+          <button onclick="extractWithAI()">Extract with ChatGPT</button>
+          <p id="aiStatus"></p>
+        </div>
+
+        <div class="panel">
+          <h2>Invoice Details</h2>
+          <div class="form-grid">
+            <label>Invoice No<input id="invoiceNo" value="SR-25-0001"></label>
+            <label>Date<input id="date" type="date"></label>
+            <label>Customer<input id="customer"></label>
+            <label>DO No<input id="doNo"></label>
+          </div>
+          <h3>Items</h3>
+          <table id="itemsTable"><thead><tr><th>Description</th><th>Qty</th><th>UOM</th><th>Rate</th><th>Amount</th><th></th></tr></thead><tbody></tbody></table>
+          <button onclick="addItem('DIESEL')">+ Diesel</button>
+          <button onclick="addItem('PETROL')">+ Petrol</button>
+          <button onclick="addItem('')">+ Custom</button>
+          <h2>Grand Total: <span id="grandTotal">0.00</span></h2>
+          <button class="primary" onclick="generateAndUpload()">Generate PDF + Save Record</button>
+        </div>
+      </div>
+
+      <div id="history" class="page hidden"><div class="panel"><h2>Invoice History</h2><table id="historyTable"><thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+      <div id="reports" class="page hidden"><div class="panel"><h2>Reports</h2><p>Reports are calculated from local browser records. Owner can also use the Google Sheet as master record.</p><button onclick="exportCSV()">Download CSV</button></div></div>
+      <div id="settings" class="page hidden"><div class="panel"><h2>Settings</h2><label>Google Apps Script Web App URL<input id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec"></label><button onclick="saveSettings()">Save Settings</button></div></div>
+    </div>
+  </section>
+<script src="app.js"></script>
+</body>
+</html>
