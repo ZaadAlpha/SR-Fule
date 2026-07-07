@@ -122,8 +122,185 @@ async function extractWithAI(){
     console.error(e);
   }
 }
-async function generateAndUpload(){ calc(); const rec={invoiceNo:invoiceNo.value,date:date.value,customer:customer.value,doNo:doNo.value,items:getItems(),total:+grandTotal.textContent,createdAt:new Date().toISOString(),status:'Local'}; const {jsPDF}=window.jspdf; const doc=new jsPDF(); doc.setFontSize(18); doc.text('Tax Invoice',14,18); doc.setFontSize(10); doc.text('S AND R FUEL PVT LTD',14,28); doc.text('TIN: 1174562CIT001',14,34); doc.text(`Invoice #: ${rec.invoiceNo}`,140,28); doc.text(`Date: ${rec.date}`,140,34); doc.text(`Bill To: ${rec.customer}`,14,48); doc.text(`DO #: ${rec.doNo}`,14,54); let y=70; doc.text('Description',14,y); doc.text('Qty',85,y); doc.text('UOM',110,y); doc.text('Rate',135,y); doc.text('Amount',165,y); y+=8; rec.items.forEach(it=>{doc.text(String(it.description),14,y); doc.text(String(it.qty),85,y); doc.text(String(it.uom),110,y); doc.text(String(it.rate),135,y); doc.text(it.amount.toFixed(2),165,y); y+=8;}); doc.setFontSize(14); doc.text(`Grand Total: ${rec.total.toFixed(2)}`,130,y+8); doc.setFontSize(9); doc.text('Thank you! All payments should be made in favour of S AND R FUEL PVT LTD',14,280); if(photoDataUrl){doc.addPage(); doc.text('Original Delivery Note Photo',14,14); doc.addImage(photoDataUrl,'JPEG',14,24,180,0);} const pdfData=doc.output('datauristring'); rec.pdfData=pdfData; if(settings.scriptUrl){ try{ const res=await fetch(settings.scriptUrl,{method:'POST',body:JSON.stringify({action:'save',record:rec,pdf:pdfData,image:photoDataUrl}),headers:{'Content-Type':'text/plain'}}); const out=await res.json(); rec.status=out.ok?'Uploaded':'Upload Failed'; rec.pdfUrl=out.pdfUrl||''; }catch(e){ rec.status='Upload Failed'; }} records.push(rec); localStorage.setItem('records',JSON.stringify(records)); renderHistory(); refreshDashboard(); alert('Invoice saved: '+rec.status); }
-function renderHistory(){ const tb=historyTable?.querySelector('tbody'); if(!tb)return; tb.innerHTML=''; records.slice().reverse().forEach(r=>{tb.innerHTML+=`<tr><td>${r.invoiceNo}</td><td>${r.date}</td><td>${r.customer}</td><td>${r.total.toFixed(2)}</td><td>${r.status}</td></tr>`;}); }
-function refreshDashboard(){ const today=new Date().toISOString().slice(0,10), month=today.slice(0,7); const sum=f=>records.filter(f).reduce((a,r)=>a+r.total,0); todaySales.textContent=sum(r=>r.date===today).toFixed(2); monthSales.textContent=sum(r=>r.date?.slice(0,7)===month).toFixed(2); invoiceCount.textContent=records.length; dieselQty.textContent=records.flatMap(r=>r.items).filter(i=>/diesel/i.test(i.description)).reduce((a,i)=>a+i.qty,0); petrolQty.textContent=records.flatMap(r=>r.items).filter(i=>/petrol/i.test(i.description)).reduce((a,i)=>a+i.qty,0); }
-function saveSettings(){ settings.scriptUrl=scriptUrl.value.trim(); localStorage.setItem('settings',JSON.stringify(settings)); alert('Saved'); }
-function exportCSV(){ const rows=['Invoice,Date,Customer,Total,Status',...records.map(r=>`${r.invoiceNo},${r.date},${r.customer},${r.total},${r.status}`)]; const blob=new Blob([rows.join('\n')],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='invoice-records.csv'; a.click(); }
+async function generateAndUpload(){
+  calc();
+
+  const rec = {
+    invoiceNo: invoiceNo.value,
+    date: date.value,
+    customer: customer.value,
+    doNo: doNo.value,
+    items: getItems(),
+    total: +grandTotal.textContent,
+    createdAt: new Date().toISOString(),
+    status: 'Local'
+  };
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4');
+
+  // Header
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(26);
+  doc.setTextColor(0, 100, 90);
+  doc.text('SR', 18, 25);
+
+  doc.setFontSize(14);
+  doc.text('Fuel Private Limited', 38, 25);
+
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(24);
+  doc.text('Tax Invoice', 145, 22);
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text('TIN: 1174562CIT001', 150, 31);
+
+  // Bill To box
+  doc.setDrawColor(120);
+  doc.roundedRect(14, 45, 92, 40, 2, 2);
+  doc.setFillColor(200, 200, 200);
+  doc.rect(14, 45, 92, 8, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.text('Bill To', 18, 51);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.text(rec.customer || '', 18, 62, { maxWidth: 82 });
+
+  // Date / Invoice box
+  doc.roundedRect(138, 48, 58, 22, 2, 2);
+  doc.setFillColor(200, 200, 200);
+  doc.rect(138, 48, 58, 8, 'F');
+  doc.line(167, 48, 167, 70);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Date', 147, 54);
+  doc.text('Invoice #', 172, 54);
+
+  doc.setFont('helvetica', 'normal');
+  doc.text(rec.date || '', 143, 64);
+  doc.text(rec.invoiceNo || '', 171, 64);
+
+  // Terms
+  doc.setFont('helvetica', 'bold');
+  doc.text('Terms', 145, 82);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Due Date', 145, 91);
+  doc.text(rec.date || '', 174, 91);
+  doc.text('DO. #', 145, 100);
+  doc.text(rec.doNo || '', 174, 100);
+  doc.line(145, 84, 196, 84);
+  doc.line(145, 93, 196, 93);
+  doc.line(145, 102, 196, 102);
+
+  // Items table
+  let y = 115;
+  doc.setFillColor(200, 200, 200);
+  doc.rect(14, y, 182, 10, 'F');
+  doc.rect(14, y, 182, 92);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Description', 45, y + 7);
+  doc.text('Qty', 98, y + 7);
+  doc.text('UOM', 118, y + 7);
+  doc.text('Rate', 145, y + 7);
+  doc.text('Amount', 170, y + 7);
+
+  doc.line(90, y, 90, y + 92);
+  doc.line(110, y, 110, y + 92);
+  doc.line(130, y, 130, y + 92);
+  doc.line(160, y, 160, y + 92);
+
+  doc.setFont('helvetica', 'normal');
+  y += 18;
+
+  rec.items.forEach(it => {
+    if (!it.description && !it.qty) return;
+    doc.text(String(it.description || ''), 18, y);
+    doc.text(String(it.qty || ''), 98, y);
+    doc.text(String(it.uom || 'LTR'), 117, y);
+    doc.text(Number(it.rate || 0).toFixed(4), 140, y);
+    doc.text(Number(it.amount || 0).toFixed(2), 170, y);
+    y += 8;
+  });
+
+  // Payment text
+  doc.setFontSize(10);
+  doc.text('All payments should be made in favour of "S AND R FUEL PVT LTD"', 16, 214);
+  doc.text('Payment should be made within 7 days from the date of invoice.', 16, 220);
+  doc.text('Any discrepancies should be notified within 48 hrs.', 16, 226);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Bank Details:', 16, 236);
+  doc.setFont('helvetica', 'normal');
+  doc.text('USD', 16, 244);
+  doc.text('A/C Name: S AND R FUEL PVT LTD', 16, 250);
+  doc.text('A/C Number : 7730000756084', 16, 256);
+  doc.text('----------------------------------------', 16, 262);
+  doc.text('MVR', 16, 268);
+  doc.text('A/C Name: S AND R FUEL PVT LTD', 16, 274);
+  doc.text('A/C Number : 7730000756083', 16, 280);
+
+  // Totals box
+  const boxX = 130;
+  const boxY = 212;
+  doc.roundedRect(boxX, boxY, 66, 44, 2, 2);
+  doc.line(boxX, boxY + 11, boxX + 66, boxY + 11);
+  doc.line(boxX, boxY + 22, boxX + 66, boxY + 22);
+  doc.line(boxX, boxY + 33, boxX + 66, boxY + 33);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.text('Subtotal', boxX + 5, boxY + 8);
+  doc.text('GST (8.0%)', boxX + 5, boxY + 19);
+  doc.text('Grand Total', boxX + 5, boxY + 30);
+  doc.text('Balance Due', boxX + 5, boxY + 41);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(`USD ${rec.total.toFixed(2)}`, boxX + 40, boxY + 8);
+  doc.text('USD 0.00', boxX + 42, boxY + 19);
+  doc.text(`USD ${rec.total.toFixed(2)}`, boxX + 40, boxY + 30);
+  doc.text(`USD ${rec.total.toFixed(2)}`, boxX + 40, boxY + 41);
+
+  // Signature / footer
+  doc.setFont('helvetica', 'bold');
+  doc.text('Thank you !', 96, 286);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('Should you have any enquiries concerning this invoice, Please contact Ahmed Zaahid +960 9555088', 35, 292);
+  doc.text('Daisy House, L. Kalaidhoo, Rep. of Maldives', 68, 297);
+  doc.text('Tel: 9998971 | Tel: 9998516 | Email: sales@sandrfuel.com', 55, 301);
+
+  // Page 2 original photo
+  if(photoDataUrl){
+    doc.addPage();
+    doc.setFontSize(16);
+    doc.text('Original Delivery Note Photo', 14, 18);
+    doc.addImage(photoDataUrl, 'JPEG', 14, 28, 180, 0);
+  }
+
+  const pdfData = doc.output('datauristring');
+  rec.pdfData = pdfData;
+
+  if(settings.scriptUrl){
+    try{
+      const res = await fetch(settings.scriptUrl,{
+        method:'POST',
+        body:JSON.stringify({action:'save',record:rec,pdf:pdfData,image:photoDataUrl}),
+        headers:{'Content-Type':'text/plain'}
+      });
+      const out = await res.json();
+      rec.status = out.ok ? 'Uploaded' : 'Upload Failed';
+      rec.pdfUrl = out.pdfUrl || '';
+    }catch(e){
+      rec.status = 'Upload Failed';
+    }
+  }
+
+  records.push(rec);
+  localStorage.setItem('records', JSON.stringify(records));
+  renderHistory();
+  refreshDashboard();
+  alert('Invoice saved: ' + rec.status);
+}
