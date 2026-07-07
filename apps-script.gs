@@ -21,8 +21,16 @@ function ocr(imageDataUrl) {
     response_format:{ type:'json_object' }
   };
   const res = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', { method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+key}, payload:JSON.stringify(payload), muteHttpExceptions:true });
-  const obj = JSON.parse(res.getContentText());
-  return JSON.parse(obj.choices[0].message.content);
+  const txt = res.getContentText();
+  const obj = JSON.parse(txt);
+  if (!obj.choices || !obj.choices[0]) return { ok:false, error:'OpenAI error', raw:txt };
+  const content = obj.choices[0].message.content || '{}';
+  try {
+    const parsed = JSON.parse(content);
+    return { ok:true, data:parsed };
+  } catch (err) {
+    return { ok:false, error:'Could not parse OCR JSON', raw:content };
+  }
 }
 function saveInvoice(record, pdfDataUrl, imageDataUrl) {
   const folderId = PropertiesService.getScriptProperties().getProperty('DRIVE_FOLDER_ID');
